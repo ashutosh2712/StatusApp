@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres
+    container_name: status-postgres-db
+    restart: always
+    environment:
+      POSTGRES_DB: status_management_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: StatusPostgres@123
+    volumes:
+      - postgres_status_data:/var/lib/postgresql/data
+    ports:
+      - 8013:5432
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: status-django-backend
+    restart: always
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./server:/app
+    ports:
+      - 8001:8000
+    depends_on:
+      - db
+    env_file:
+      - .env
+
+volumes:
+  postgres_status_data:
