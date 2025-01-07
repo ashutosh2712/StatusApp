@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -7,6 +7,21 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     organization = models.ForeignKey('Organization', on_delete=models.CASCADE, null=True, blank=True)
     is_admin = models.BooleanField(default=False)  # Organization-level admin flag
+
+    groups = models.ManyToManyField(
+        Group,
+        related_name='custom_user_groups',  # Avoid conflict with auth.User.groups
+        blank=True,
+        verbose_name='groups',
+        help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
+    )
+    user_permissions = models.ManyToManyField(
+        Permission,
+        related_name='custom_user_permissions',  # Avoid conflict with auth.User.user_permissions
+        blank=True,
+        verbose_name='user permissions',
+        help_text='Specific permissions for this user.',
+    )
 
     def __str__(self):
         return self.username
