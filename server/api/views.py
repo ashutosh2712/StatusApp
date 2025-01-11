@@ -1,12 +1,14 @@
 from rest_framework.response import Response
-from rest_framework.decorators import action
+from rest_framework.decorators import action, permission_classes
 from rest_framework import viewsets, status
 from django.contrib.auth import get_user_model
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound, ValidationError, PermissionDenied
 from django.contrib.auth.hashers import make_password
 from rest_framework.authtoken.models import Token
-from rest_framework.permissions import IsAuthenticated  
-User = get_user_model()
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.utils import timezone
+
+User = get_user_model() 
 from api.models import Organization, Service, Incident, Maintenance
 
 
@@ -16,6 +18,7 @@ class UserViewSet(viewsets.ViewSet):
     """
 
     @action(detail=False, methods=["post"], url_path="register-user")
+    
     def register(self, request):
         """
         API to register a new user.
@@ -50,7 +53,7 @@ class UserViewSet(viewsets.ViewSet):
         )
         
     @action(detail=False, methods=["post"], url_path="login")
-
+    
     def login(self, request):
         """
         Authenticate user and return token.
@@ -71,15 +74,20 @@ class UserViewSet(viewsets.ViewSet):
         token, _ = Token.objects.get_or_create(user=user)
 
         return Response({"token": token.key, "user_id": user.id, "username": user.username})
-    
+   
+    @permission_classes([IsAuthenticated])  # Protect the endpoint
     @action(detail=False, methods=["get"], url_path="list-users")
     def list_users(self, request):
         """
         API to list all users.
         """
+        print("Permission Classes:", self.permission_classes)  # Should show [AllowAny]
+        print("User:", request.user)  # Should be AnonymousUser for unauthenticated access
+        print("Auth:", request.auth)
         users = User.objects.all().values("id", "username", "email", "is_admin")
         return Response(users, status=status.HTTP_200_OK)
 
+    @permission_classes([IsAuthenticated])
     @action(detail=True, methods=["put"], url_path="update-user")
     def update_user(self, request, pk=None):
         """
@@ -112,7 +120,8 @@ class UserViewSet(viewsets.ViewSet):
             },
             status=status.HTTP_200_OK,
         )
-
+        
+    @permission_classes([IsAuthenticated])
     @action(detail=True, methods=["delete"], url_path="delete-user")
     def delete_user(self, request, pk=None):
         """
@@ -132,7 +141,8 @@ class OrganizationViewSet(viewsets.ViewSet):
     """
     A ViewSet for managing organizations (register, list, update, and delete).
     """
-
+    # permission_classes = [IsAuthenticated]
+    
     @action(detail=False, methods=["post"], url_path="register-organization")
     @permission_classes([IsAuthenticated])  # Protect the endpoint
     def register(self, request):
@@ -162,9 +172,9 @@ class OrganizationViewSet(viewsets.ViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    @action(detail=False, methods=["get"], url_path="list-organizations")
     @permission_classes([IsAuthenticated])  # Protect the endpoint
-    def list(self, request):
+    @action(detail=False, methods=["get"], url_path="list-organizations")
+    def list_orgs(self, request):
         """
         API to list all organizations.
         """
@@ -173,7 +183,7 @@ class OrganizationViewSet(viewsets.ViewSet):
 
     @action(detail=True, methods=["put"], url_path="update-organization")
     @permission_classes([IsAuthenticated])  # Protect the endpoint
-    def update(self, request, pk=None):
+    def update_orgs(self, request, pk=None):
         """
         API to update organization details.
         """
@@ -208,7 +218,7 @@ class OrganizationViewSet(viewsets.ViewSet):
     def delete(self, request, pk=None):
         """
         API to delete an organization.
-        """
+        """ 
         try:
             organization = Organization.objects.get(pk=pk)
         except Organization.DoesNotExist:
@@ -235,7 +245,7 @@ class ServiceViewSet(viewsets.ViewSet):
         data = request.data
         name = data.get("name")
         description = data.get("description", "")
-        status = data.get("status", "operational")
+        service_status  = data.get("status", "operational")
         organization_id = data.get("organization_id")
 
         # Validate input data
@@ -252,7 +262,7 @@ class ServiceViewSet(viewsets.ViewSet):
         service = Service.objects.create(
             name=name,
             description=description,
-            status=status,
+            status=service_status,
             organization=organization,
         )
 
@@ -271,7 +281,7 @@ class ServiceViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["get"], url_path="list-services")
     @permission_classes([IsAuthenticated])  # Protect the endpoint
-    def list(self, request):
+    def list_services(self, request):
         """
         API to list all services.
         """
@@ -289,7 +299,7 @@ class ServiceViewSet(viewsets.ViewSet):
 
     @action(detail=True, methods=["put"], url_path="update-service")
     @permission_classes([IsAuthenticated])  # Protect the endpoint
-    def update(self, request, pk=None):
+    def update_service(self, request, pk=None):
         """
         API to update service details.
         """
@@ -301,15 +311,15 @@ class ServiceViewSet(viewsets.ViewSet):
         data = request.data
         name = data.get("name")
         description = data.get("description")
-        status = data.get("status")
+        service_status = data.get("status")
 
         # Update fields if provided
         if name:
             service.name = name
         if description:
             service.description = description
-        if status:
-            service.status = status
+        if service_status:
+            service.status = service_status
 
         service.save()
 
@@ -361,7 +371,7 @@ class IncidentViewSet(viewsets.ViewSet):
         data = request.data
         title = data.get("title")
         description = data.get("description", "")
-        status = data.get("status", "open")
+        incident_status = data.get("status", "open")
         organization_id = data.get("organization_id")
         service_ids = data.get("service_ids", [])
 
@@ -382,7 +392,7 @@ class IncidentViewSet(viewsets.ViewSet):
         incident = Incident.objects.create(
             title=title,
             description=description,
-            status=status,
+            status=incident_status,
             organization=organization,
         )
 
@@ -408,7 +418,7 @@ class IncidentViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["get"], url_path="list-incidents")
     @permission_classes([IsAuthenticated])  # Protect the endpoint
-    def list(self, request):
+    def list_incidents(self, request):
         """
         API to list all incidents.
         """
@@ -435,7 +445,7 @@ class IncidentViewSet(viewsets.ViewSet):
 
     @action(detail=True, methods=["put"], url_path="update-incident")
     @permission_classes([IsAuthenticated])  # Protect the endpoint
-    def update(self, request, pk=None):
+    def update_incidents(self, request, pk=None):
         """
         API to update incident details.
         """
@@ -447,7 +457,7 @@ class IncidentViewSet(viewsets.ViewSet):
         data = request.data
         title = data.get("title")
         description = data.get("description")
-        status = data.get("status")
+        incident_status = data.get("status")
         service_ids = data.get("service_ids", [])
 
         # Update fields if provided
@@ -455,8 +465,8 @@ class IncidentViewSet(viewsets.ViewSet):
             incident.title = title
         if description:
             incident.description = description
-        if status:
-            incident.status = status
+        if incident_status:
+            incident.status = incident_status
 
         # Update associated services
         if service_ids:
@@ -506,6 +516,7 @@ class StatusPageViewSet(viewsets.ViewSet):
     """
 
     @action(detail=False, methods=["get"], url_path="current-status")
+    @permission_classes([IsAuthenticated]) 
     def current_status(self, request):
         """
         API to fetch the current status of all services.
@@ -541,6 +552,7 @@ class StatusPageViewSet(viewsets.ViewSet):
         )
 
     @action(detail=False, methods=["get"], url_path="incident-timeline")
+    @permission_classes([IsAuthenticated]) 
     def incident_timeline(self, request):
         """
         API to fetch a timeline of incidents and maintenances.
@@ -585,7 +597,69 @@ class StatusPageViewSet(viewsets.ViewSet):
             status=status.HTTP_200_OK,
         )
         
-## not sure
+## Admin side routes
+
+class MaintenanceViewSet(viewsets.ViewSet):
+    """
+    A ViewSet for managing maintenances.
+    """
+
+    @action(detail=False, methods=["post"], url_path="create-maintenance")
+    @permission_classes([IsAuthenticated])  # Only admins or authorized users can create
+    def create_maintenance(self, request):
+        """
+        API to create a maintenance record.
+        """
+        data = request.data
+        title = data.get("title")
+        description = data.get("description", "")
+        start_time = data.get("start_time")
+        end_time = data.get("end_time")
+        service_ids = data.get("service_ids", [])
+        organization_id = data.get("organization_id")
+
+        # Validate input
+        if not title or not start_time or not end_time:
+            return Response(
+                {"error": "Title, start_time, and end_time are required fields."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    
+        try:
+            organization = Organization.objects.get(id=organization_id)
+        except Organization.DoesNotExist:
+            return Response({"error": "Organization not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Fetch services
+        services = Service.objects.filter(id__in=service_ids)
+
+        # Create maintenance
+        maintenance = Maintenance.objects.create(
+            title=title,
+            description=description,
+            start_time=start_time,
+            end_time=end_time,
+            organization=organization,
+        )
+        maintenance.services.set(services)
+        maintenance.save()
+
+        return Response(
+            {
+                "message": "Maintenance created successfully.",
+                "maintenance": {
+                    "id": maintenance.id,
+                    "title": maintenance.title,
+                    "description": maintenance.description,
+                    "start_time": maintenance.start_time,
+                    "end_time": maintenance.end_time,
+                    "organization_id": organization_id,
+                    "services": [service.id for service in services],
+                },
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 class TeamManagementViewSet(viewsets.ViewSet):
     """
