@@ -6,6 +6,8 @@ from rest_framework.exceptions import NotFound, ValidationError, PermissionDenie
 from django.contrib.auth.hashers import make_password
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
 from django.utils import timezone
 
 User = get_user_model() 
@@ -64,16 +66,33 @@ class UserViewSet(viewsets.ViewSet):
         if not username or not password:
             return Response({"error": "Username and password are required."}, status=400)
 
-        from django.contrib.auth import authenticate
+         # Authenticate user
         user = authenticate(username=username, password=password)
 
         if not user:
-            return Response({"error": "Invalid credentials."}, status=401)
+            return Response(
+                {"error": "Invalid credentials."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
-        # Get or create token for the user
-        token, _ = Token.objects.get_or_create(user=user)
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
 
-        return Response({"token": token.key, "user_id": user.id, "username": user.username})
+        return Response(
+            {
+                "message": "Login successful.",
+                "access": access_token,
+                "refresh": refresh_token,
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
    
     @permission_classes([IsAuthenticated])  # Protect the endpoint
     @action(detail=False, methods=["get"], url_path="list-users")

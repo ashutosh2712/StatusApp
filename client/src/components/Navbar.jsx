@@ -5,7 +5,9 @@ const Navbar = () => {
   return (
     <header className="bg-white shadow">
       <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">StatusApp</h1>
+        <Link to="/">
+          <h1 className="text-2xl font-bold text-gray-800">StatusApp</h1>
+        </Link>
         <nav className="space-x-4">
           <a href="#features" className="text-gray-600 hover:text-gray-900">
             Features
@@ -13,9 +15,9 @@ const Navbar = () => {
           <a href="#about" className="text-gray-600 hover:text-gray-900">
             About
           </a>
-          <a href="/login" className="text-gray-600 hover:text-gray-900">
+          <Link to="/login" className="text-gray-600 hover:text-gray-900">
             Login
-          </a>
+          </Link>
           <Button href="/signup">Sign Up</Button>
         </nav>
       </div>
