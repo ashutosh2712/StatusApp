@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".", // Sets the base URL for module resolution
+    "paths": {
+      "@/*": ["src/*"] // Maps '@' to the 'src' directory
+    }
+  },
+  "include": ["src/**/*"] // Include all files in the 'src' folder
+}
