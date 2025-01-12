@@ -33,6 +33,7 @@ ALLOWED_HOSTS = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # React frontend running on this origin
+    "http://34.173.112.130:5173"
 ]
 
 AUTH_USER_MODEL = 'api.User'
