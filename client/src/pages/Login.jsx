@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { loginUser } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
@@ -64,6 +64,17 @@ const Login = () => {
             Login
           </Button>
         </form>
+        <div className="mt-6 text-center">
+          <p className="text-gray-600">
+            First time here?{" "}
+            <Link
+              to="/signup"
+              className="text-blue-600 hover:underline font-medium"
+            >
+              Create an account
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
