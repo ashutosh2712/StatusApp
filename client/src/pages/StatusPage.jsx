@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { fetchCurrentStatus, fetchIncidentTimeline } from "@/services/api";
+import StatusUpdates from "@/components/StatusUpdates";
 
 const StatusPage = () => {
   const [services, setServices] = useState([]);
@@ -31,7 +32,7 @@ const StatusPage = () => {
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-6">Public Status Page</h1>
-
+      <StatusUpdates />
       {loading ? (
         <p>Loading...</p>
       ) : (

@@ -46,7 +46,8 @@ INSTALLED_APPS = [
     'api',
     'rest_framework',
     'rest_framework.authtoken',
-    'django_extensions'
+    'django_extensions',
+    'channels'
 ]
 
 MIDDLEWARE = [
@@ -80,6 +81,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'statusApp.wsgi.application'
 
+ASGI_APPLICATION = "statusApp.asgi.application"
+
+# Redis settings for WebSocket communication
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis", 6379)],  # service name 'redis' from docker-compose.yml
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
