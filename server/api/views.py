@@ -42,14 +42,22 @@ class UserViewSet(viewsets.ViewSet):
             is_admin=is_admin
         )
 
-        # Generate a token for the user
-        token, _ = Token.objects.get_or_create(user=user)
+         # Generate JWT tokens for the user
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
 
         return Response(
             {
                 "message": "User registered successfully.",
-                "user": {"id": user.id, "username": user.username, "email": user.email, "is_admin": user.is_admin},
-                "token": token.key,
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "is_admin": user.is_admin,
+                },
+                "access": access_token,
+                "refresh": refresh_token,
             },
             status=201,
         )

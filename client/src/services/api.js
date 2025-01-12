@@ -10,3 +10,7 @@ export const loginUser = async (username, password) => {
     password,
   });
 };
+
+export const registerUser = async (data) => {
+  return await axios.post(`${API_BASE_URL}/api/users/register-user/`, data);
+};

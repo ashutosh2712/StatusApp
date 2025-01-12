@@ -2,11 +2,13 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { loginUser } from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -17,14 +19,11 @@ const Login = () => {
       //   console.log("response", response);
       if (response.status === 200) {
         const data = response.data;
+
         localStorage.setItem("accessToken", data.access); // Store access token
         localStorage.setItem("refreshToken", data.refresh); // Store refresh token
 
-        // Log the token to confirm
-        console.log(
-          "Access token from localStorage:",
-          localStorage.getItem("accessToken")
-        );
+        login(username); // Set the username in the context
         navigate("/dashboard"); // Redirect after login
       } else {
         const errorData = await response.json();
