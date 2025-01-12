@@ -554,13 +554,23 @@ class StatusPageViewSet(viewsets.ViewSet):
         for service in services:
             # Check if there are active maintenances for the service
             active_maintenances = Maintenance.objects.filter(
-                services=service, start_time__lte=timezone.now(), end_time__gte=timezone.now()
+                services=service, end_time__gte=timezone.now()
             )
             maintenance_info = [
                 {"id": maintenance.id, "title": maintenance.title, "description": maintenance.description}
                 for maintenance in active_maintenances
             ]
+            
+            # Check if there are active incidents for the service
+            active_incidents = Incident.objects.filter(
+                services=service, status__in=["open", "in_progress"]
+            )
+            incident_info = [
+                {"id": incident.id, "title": incident.title, "description": incident.description}
+                for incident in active_incidents
+            ]
 
+            # Append service data with active maintenances and incidents
             status_data.append({
                 "id": service.id,
                 "name": service.name,
@@ -568,6 +578,7 @@ class StatusPageViewSet(viewsets.ViewSet):
                 "description": service.description,
                 "updated_at": service.updated_at,
                 "active_maintenances": maintenance_info,
+                "active_incidents": incident_info,  # Add active incidents here
             })
 
         return Response(
@@ -687,6 +698,101 @@ class MaintenanceViewSet(viewsets.ViewSet):
             },
             status=status.HTTP_201_CREATED,
         )
+    
+    @action(detail=False, methods=["get"], url_path="list-maintenance")
+    @permission_classes([IsAuthenticated])  # Protect the endpoint
+    def list_maintenance(self, request):
+        """
+        API to list all maintenances.
+        """
+        maintenances = Maintenance.objects.prefetch_related("services", "organization").all()
+        data = [
+            {
+                "id": maintenance.id,
+                "title": maintenance.title,
+                "description": maintenance.description,
+                "start_time": maintenance.start_time,
+                "end_time": maintenance.end_time,
+                "organization": {
+                    "id": maintenance.organization.id,
+                    "name": maintenance.organization.name,
+                }
+                if maintenance.organization
+                else None,
+                "services": [
+                    {"id": service.id, "name": service.name}
+                    for service in maintenance.services.all()
+                ],
+            }
+            for maintenance in maintenances
+        ]
+        return Response(data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["put"], url_path="update-maintenance")
+    @permission_classes([IsAuthenticated])  # Only admins or authorized users can update
+    def update_maintenance(self, request, pk=None):
+        """
+        API to update a maintenance record.
+        """
+        try:
+            maintenance = Maintenance.objects.get(id=pk)
+        except Maintenance.DoesNotExist:
+            return Response({"error": "Maintenance not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data
+        title = data.get("title", maintenance.title)
+        description = data.get("description", maintenance.description)
+        start_time = data.get("start_time", maintenance.start_time)
+        end_time = data.get("end_time", maintenance.end_time)
+        service_ids = data.get("service_ids", [])
+        organization_id = data.get("organization_id", maintenance.organization.id)
+
+        try:
+            organization = Organization.objects.get(id=organization_id)
+        except Organization.DoesNotExist:
+            return Response({"error": "Organization not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Fetch services
+        services = Service.objects.filter(id__in=service_ids)
+
+        # Update maintenance
+        maintenance.title = title
+        maintenance.description = description
+        maintenance.start_time = start_time
+        maintenance.end_time = end_time
+        maintenance.organization = organization
+        maintenance.services.set(services)
+        maintenance.save()
+
+        return Response(
+            {
+                "message": "Maintenance updated successfully.",
+                "maintenance": {
+                    "id": maintenance.id,
+                    "title": maintenance.title,
+                    "description": maintenance.description,
+                    "start_time": maintenance.start_time,
+                    "end_time": maintenance.end_time,
+                    "organization_id": maintenance.organization.id,
+                    "services": [service.id for service in services],
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["delete"], url_path="delete-maintenance")
+    @permission_classes([IsAuthenticated])  # Only admins or authorized users can delete
+    def delete_maintenance(self, request, pk=None):
+        """
+        API to delete a maintenance record.
+        """
+        try:
+            maintenance = Maintenance.objects.get(id=pk)
+        except Maintenance.DoesNotExist:
+            return Response({"error": "Maintenance not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        maintenance.delete()
+        return Response({"message": "Maintenance deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
 class TeamManagementViewSet(viewsets.ViewSet):
     """

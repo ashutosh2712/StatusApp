@@ -18,12 +18,15 @@ const Navbar = () => {
           <h1 className="text-2xl font-bold text-gray-800">StatusApp</h1>
         </Link>
         <nav className="space-x-4">
-          <a href="#features" className="text-gray-600 hover:text-gray-900">
+          {/* <a href="#features" className="text-gray-600 hover:text-gray-900">
             Features
-          </a>
-          <a href="#about" className="text-gray-600 hover:text-gray-900">
-            About
-          </a>
+          </a> */}
+          <Link to="/status-page" className="text-gray-600 hover:text-gray-900">
+            Status
+          </Link>
+          <Link to="/dashboard" className="text-gray-600 hover:text-gray-900">
+            Dashboard
+          </Link>
           {user ? (
             <>
               <span className="text-gray-600">Hello, {user}</span>
