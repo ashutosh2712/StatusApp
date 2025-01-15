@@ -330,6 +330,10 @@ class ServiceViewSet(viewsets.ViewSet):
         """
         API to update service details.
         """
+        print(f"Update service api calling!")
+        # from asgiref.sync import async_to_sync
+        # from channels.layers import get_channel_layer
+        
         try:
             service = Service.objects.get(pk=pk)
         except Service.DoesNotExist:
@@ -349,6 +353,16 @@ class ServiceViewSet(viewsets.ViewSet):
             service.status = service_status
 
         service.save()
+        
+        # # Broadcast the update
+        # channel_layer = get_channel_layer()
+        # async_to_sync(channel_layer.group_send)(
+        #     "status_updates",
+        #     {
+        #         "type": "status_update",
+        #         "message": f"Service {service.name} status updated to {service.status}.",
+        #     },
+        # )
 
         return Response(
             {

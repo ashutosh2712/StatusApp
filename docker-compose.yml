@@ -40,6 +40,22 @@ services:
     env_file:
       - .env
 
+  worker:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: status-django-worker
+    restart: always
+    command: >
+      sh -c "python manage.py runworker status_updates"
+    depends_on:
+      - redis
+      - db
+    env_file:
+      - .env
+    volumes:
+      - ./server:/app
+
   frontend:
     build:
       context: ./client

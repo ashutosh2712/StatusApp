@@ -27,7 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     "127.0.0.1",  # Local development
-    "localhost",  # Local development
+    "localhost",  # Local development 
     "34.173.112.130",  # GCP VM external IP
 ]
 
@@ -41,6 +41,7 @@ AUTH_USER_MODEL = 'api.User'
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

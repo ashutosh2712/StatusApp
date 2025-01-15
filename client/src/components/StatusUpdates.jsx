@@ -11,8 +11,14 @@ const StatusUpdates = () => {
     };
 
     socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      setMessages((prevMessages) => [...prevMessages, data.message]);
+      console.log("Raw WebSocket message:", event.data);
+      try {
+        const data = JSON.parse(event.data);
+        console.log("Parsed WebSocket message:", data);
+        setMessages((prevMessages) => [...prevMessages, data.message]);
+      } catch (err) {
+        console.error("Error parsing WebSocket message:", err);
+      }
     };
 
     socket.onclose = () => {
