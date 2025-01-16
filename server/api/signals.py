@@ -17,7 +17,7 @@ def service_status_updated(sender, instance, **kwargs):
 
     # Construct the message
     message = {
-        "type": "status_update",
+        "type": "status.update",
         "message": f"Service {instance.name} status updated to {instance.status}."
     }
 
